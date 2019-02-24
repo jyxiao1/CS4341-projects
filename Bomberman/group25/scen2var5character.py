@@ -7,10 +7,11 @@ from colorama import Fore, Back
 import random
 from sensed_world import SensedWorld
 import math
-from heuristics import nodevalue
 
-class Scen2Var1Character(CharacterEntity):
+class Scen2Var5Character(CharacterEntity):
+
     BOMB = 0
+
     def __init__(self, name, avatar, x, y, depth):
         AIEntity.__init__(self, name, avatar)
         MovableEntity.__init__(self, x, y)
@@ -19,35 +20,65 @@ class Scen2Var1Character(CharacterEntity):
         # Debugging elements
         self.tiles = {}
         self.max_depth = depth
+        # TODO: (Here and in other character code) get rid of variables that are no longer needed
         # List of cells already visited
-        self.visited = []
+        # self.visited = []
         self.foundexit = False
         self.exit = (0,0)
         # Location of bomb on board. (-1,-1) means there is no bomb.
         self.bomb = (-1,-1)
+        # Time left until explosion. -1 if there is no bomb.
+        self.exp_countdown = -1
+        # Location of monster on board. (-1,-1) means there is no monster.
+        # TODO: Figure out a way to update this when/if the monster is killed
+        self.monster = (-1,-1)
+        # self.monster2 = (-1,-1)
+        self.foundmonster = False
+        # self.foundmonster2 = False
 
     def do(self, wrld):
         # Your code here
         #pass
         # Adds current position to cells already visited
-        self.visited.append((self.x, self.y))
+        # self.visited.append((self.x, self.y))
 
         # On the first move, searches through whole board to find exit
         # Would have to modify if we want to do last man standing, but I think we'd use a different map for that
-        while not self.foundexit:
+        # Also looks for monster. At least for now, assumes there's only 1.
+        while not self.foundexit and not self.foundmonster:
             for x in range(0,wrld.width()):
                 for y in range(0,wrld.height()):
                     if wrld.exit_at(x,y):
                         self.foundexit = True
                         self.exit = (x,y)
+                    if wrld.monsters_at(x, y):
+                        self.foundmonster = True
+                        self.monster = (x, y)
+        # Looks for the monster every time for optimal alpha-beta.
+        # However, it can also just go by its prediction of the monster's moves.
+
+        for dx in [-1,0,1]:
+            # Avoid out-of-bound indexing
+            if (self.monster[0] + dx >= 0) and (self.monster[0] + dx < wrld.width()):
+                for dy in [-1,0,1]:
+                    if (self.monster[1]+dy >= 0) and (self.monster[1]+dy < wrld.height()) and wrld.monsters_at(self.monster[0]+dx, self.monster[1]+dy):
+                        self.monster = (self.monster[0]+dx, self.monster[1]+dy)
         # Checks if a bomb is still at the last bomb position and resets self.bomb if it isn't
         if not self.bomb == (-1,-1) and not wrld.bomb_at(self.bomb[0],self.bomb[1]):
             self.bomb = (-1,-1)
+            self.exp_countdown = -1
+        if not self.exp_countdown == -1:
+            self.exp_countdown = self.exp_countdown - 1
+        # print(self.alpha_beta_search(wrld)[0])
         move = self.alpha_beta_search(wrld)[1]
+        # print(move)
         if move == self.BOMB:
             self.place_bomb()
             self.bomb = (self.x,self.y)
-            self.move(0, 0)
+            self.exp_countdown = wrld.bomb_time
+            # Stops moving after it places a bomb, so it doesn't walk into an explosion.
+            # TODO: The character can place a bomb and move on the same turn. Probably best to use this to my advantage.
+            self.move(0,0)
         else:
             self.move(move[0],move[1])
 
@@ -71,7 +102,7 @@ class Scen2Var1Character(CharacterEntity):
                 for dy in [-1,0,1]:
                     # Originally wrapped below in a check that the position was not the character's current position
                     # But in some cases, not moving at all may be necessary
-                    # Still can't stay still, however; move isn't counted as possible if a character is there
+                    # This still isn't an option, however; moving isn't counted as possible if a character is there, so not moving or placing a bomb is an option.
                     # Avoid out-of-bound indexing
                     if (self.y+dy >= 0) and (self.y+dy < wrld.height()) and (wrld.empty_at(self.x+dx,self.y+dy) or wrld.exit_at(self.x+dx,self.y+dy)):
                         # Add cell to list
@@ -86,12 +117,55 @@ class Scen2Var1Character(CharacterEntity):
         # place a bomb
         clonewrld = SensedWorld.from_world(wrld)
         clonewrld.me(self).place_bomb()
+        clonewrld.me(self).move(0, 0)
         (newwrld, events) = clonewrld.next()
         nextworlds.append((newwrld,events,self.BOMB))
         return nextworlds
 
+    def get_nextworlds_monster(self,wrld):
+        nextworlds=[]
+        monsterx = -1
+        monstery = -1
+        # Adapted from example code on Github
+
+        # Checks that the map contains a monster. If it does, saves its position.
+        # TODO: In future versions of this (for variants 4 and 5), account for more than one monster.
+        for x in range(0, wrld.width()):
+            for y in range(0, wrld.height()):
+                if wrld.monsters_at(x, y):
+                    monsterx = x
+                    monstery = y
+                    # monster = clonewrld.monsters_at(x, y)
+                    # monster.move(dx, dy)
+        if monsterx == -1 and monstery == -1:
+            clonewrld = SensedWorld.from_world(wrld)
+            (newwrld, events) = clonewrld.next()
+            nextworlds.append((newwrld, events, (0, 0)))
+            return nextworlds
+        # Loop through delta x
+        for dx in [-1, 0, 1]:
+            # Avoid out-of-bound indexing
+            if (monsterx + dx >= 0) and (monsterx + dx < wrld.width()):
+                # Loop through delta y
+                for dy in [-1, 0, 1]:
+                    # Avoid out-of-bound indexing
+                    if (monstery + dy >= 0) and (monstery + dy < wrld.height()) and (
+                            wrld.empty_at(monsterx + dx, monstery + dy) or wrld.characters_at(monsterx + dx, monstery + dy)):
+
+                        """
+                        if clonewrld.monsters_at(self.monster[0],self.monster[1]):
+                            monster = clonewrld.monsters_at(self.monster[0],self.monster[1])[0]
+                            monster.move(dx, dy)
+                        """
+                        clonewrld = SensedWorld.from_world(wrld)
+                        monster = clonewrld.monsters_at(monsterx, monstery)[0]
+                        monster.move(dx, dy)
+                        (newwrld, events) = clonewrld.next()
+                        nextworlds.append((newwrld, events, (dx, dy)))
+            return nextworlds
+
     def alpha_beta_search(self,wrld):
-        # Alpha beta functio
+        # Alpha beta function
         v = self.max_value(wrld,[],-99999,99999,self.max_depth)
         return v
 
@@ -112,7 +186,6 @@ class Scen2Var1Character(CharacterEntity):
         if depth == 0:
             # Perform evaluation function
             return (self.distance_evaluation(wrld),(0,0))
-            #return (nodevalue(wrld, self),(0,0))
         # Default move is no move at all
         v = (-99999, (0,0))
         #Iterate through possible new worlds
@@ -126,7 +199,6 @@ class Scen2Var1Character(CharacterEntity):
             # the current character's position
             # Or the difference between the exit's position and the current character's position if the character has
             # found the exit in this new board
-            # TODO: Account for character death
             """
             charoffboard = False
             for e in newevents:
@@ -167,10 +239,9 @@ class Scen2Var1Character(CharacterEntity):
         if depth == 0:
             # Perform evaluation function
             return (self.distance_evaluation(wrld),(0,0))
-            #return (nodevalue(wrld, self),(0,0))
         # Default move is no move at all
         v = (99999, (0,0))
-        for (newwrld, newevents, move) in self.get_nextworlds(wrld):
+        for (newwrld, newevents, move) in self.get_nextworlds_monster(wrld):
             # Adapted from example code, but I don't know if it will really move.
             #self.move(action[0], action[1])
             # Get new wrld
@@ -213,66 +284,59 @@ class Scen2Var1Character(CharacterEntity):
         # Uses distance formula to calculate distance between position and exit
         distance = math.sqrt(math.pow(position[0]-self.exit[0],2) + math.pow(position[1]-self.exit[1],2))
 
+        # Looks for bomb
+        bombx = -1
+        bomby = -1
+        for x in range(0, wrld.width()):
+            for y in range(0, wrld.height()):
+                if wrld.bomb_at(x, y):
+                    bombx = x
+                    bomby = y
+
         bombdistance = 99999
         xbombdistance = 99999
         ybombdistance = 99999
+        xmonsterdistance = 99999
+        ymonsterdistance = 99999
+        monsterdistance = 99999
+        withinmonsterrange = False
         dangercost = 0
-        if not self.bomb == (-1,-1):
-            #bombdistance = max(abs(self.bomb[0]-wrld.me(self).x),abs(self.bomb[1]-wrld.me(self).y)
-            xbombdistance = abs(self.bomb[0]-wrld.me(self).x)
-            ybombdistance = abs(self.bomb[1]-wrld.me(self).y)
-        #If within range of a bomb, getting away from it should be top priority.
+        if not bombx == -1 and not bomby == -1 and not self.bomb == (-1,-1):
+            # bombdistance = max(abs(self.bomb[0]-wrld.me(self).x),abs(self.bomb[1]-wrld.me(self).y)
+            xbombdistance = abs(bombx-wrld.me(self).x)
+            ybombdistance = abs(bomby-wrld.me(self).y)
+        # If within range of a bomb, getting away from it should be top priority.
         if (xbombdistance <= wrld.expl_range and ybombdistance == 0) or (ybombdistance <= wrld.expl_range and xbombdistance == 0):
             bombdistance = max(xbombdistance,ybombdistance)
             fraction = wrld.expl_range + 1 - bombdistance
-            dangercost = -9999*fraction
+            dangercost = -9999*fraction*(wrld.bomb_time + 1 - self.exp_countdown)
+        # If any neighboring cell contains a monster, the character is considered within monster range
+        # NOTE: Monsters can have a bigger detection range than 1. May need to account for this.
+        # TODO: Make this variable for when monsters have bigger detection ranges. Maybe use detection range + 1?
+        # Changed range to 2 to see if it helps the character escape danger at all.
+        for dx in range(-4,5):
+            # Avoid out-of-bound indexing
+            if (wrld.me(self).x + dx >= 0) and (wrld.me(self).x + dx < wrld.width()):
+                for dy in range(-4,5):
+                    # Avoid out-of-bound indexing
+                    if (wrld.me(self).y+dy >= 0) and (wrld.me(self).y+dy < wrld.height()) and wrld.monsters_at(wrld.me(self).x+dx,wrld.me(self).y+dy):
+                            monsterdistance = math.sqrt(math.pow(dx,2) + math.pow(dy,2))
+                            withinmonsterrange = True
+        # Escaping monsters should be equal priority to escaping explosions
+        # However, the way this is implemented currently, escaping explosions is a greater priority.
+        if withinmonsterrange:
+            fraction = 3 - monsterdistance
+            dangercost = dangercost - 9999*fraction
+
+        exitproximitycost = 0
+
+        if distance < monsterdistance:
+            exitproximitycost = 9999
+
+        # Escaping explosions are more of a priority, as running directly into one causes immediate death
+        #if wrld.explosion_at(wrld.me(self).x,wrld.me(self).y):
+        #   dangercost = -99999
+
         # Distance made negative for return value so shorter distances are of higher value
-        #print(distance*-1+dangercost)
-        return distance * -1 + dangercost
-        """
-        if position in self.visited:
-            # Move has a lower value if there character has already been there
-            return distance * -2
-        else:
-            return distance * -1
-        """
-        """
-        xdiff = self.exit[0]-wrld.me(self).x
-        ydiff = self.exit[1]-wrld.me(self).y
-        if xdiff < 0:
-            dx = -1
-            xdiff = xdiff*-1
-        else:
-            dx = 1
-
-        if ydiff < 0:
-            dy = -1
-            ydiff = ydiff * -1
-        else:
-            dy = 1
-
-        if(xdiff >= ydiff):
-            greaterdiff = xdiff
-            lesserdiff = ydiff
-        else:
-            greaterdiff = ydiff
-            lesserdiff = xdiff
-
-        wallcount = 0
-
-        for i in range(0,greaterdiff):
-            if greaterdiff == xdiff:
-                x = i
-                y = lesserdiff/greaterdiff
-            else:
-                y = i
-                x = lesserdiff/greaterdiff
-            # Increments dimension with greater difference by 1, then rounds other dimension incremented by appropriate piece of the slope
-            # Makes sure no rounded values are out of bounds
-            if round(self.x+(x*dx)) >= 0 and round(self.x+(x*dx)) < wrld.width() and round(self.y+(y*dy)) >= 0 and round(self.y+(y*dy)) < wrld.height() and wrld.wall_at(round(self.x+(x*dx)),round(self.y+(y*dy))):
-                wallcount = wallcount + 1
-
-        # A cell is worth less points if there are walls directly between the character and the exit
-        # I do not know if my math is right.
-        return distance * -1 * wallcount
-        """
+        # print(distance*-1+dangercost)
+        return distance * -1 + dangercost + exitproximitycost
