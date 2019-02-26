@@ -232,10 +232,10 @@ class Scen2Var2Character(CharacterEntity):
             dangercost = -9999*fraction
         # If any neighboring cell contains a monster, the character is considered within monster range
         # NOTE: Monsters can have a bigger detection range than 1. May need to account for this.
-        for dx in [-1,0,1]:
+        for dx in [-2,-1,0,1,2]:
             # Avoid out-of-bound indexing
             if (wrld.me(self).x + dx >= 0) and (wrld.me(self).x + dx < wrld.width()):
-                for dy in [-1,0,1]:
+                for dy in [-2,-1,0,1,2]:
                     # Avoid out-of-bound indexing
                     if (wrld.me(self).y+dy >= 0) and (wrld.me(self).y+dy < wrld.height()) and wrld.monsters_at(wrld.me(self).x+dx,wrld.me(self).y+dy):
                             withinmonsterrange = True
