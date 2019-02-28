@@ -1,8 +1,12 @@
+import customEntities
 import sys
 sys.path.insert(0, '../bomberman')
+import astar
+import math
 
 
-def nodevalue(world, player):
+# first version of nodevalue
+def nodeValue(world, player):
     value = 0
     actions = world.events
 
@@ -135,3 +139,54 @@ def nodevalue(world, player):
             value -= 20
 
     return value
+
+# second version of nodeValue, for the A star character specifically
+# currNode must contain:
+#   monsters
+#   distanceStupid
+#   distanceSmart
+#   bombTimer
+def nodeValueAStar(node, wrld):
+
+    # if there's an explosion, don't add
+    if wrld.explosion_at(node.x, node.y):
+        return None
+
+    # TODO account for other players bombs
+    # do not include the nodes that would be in bomb's path of explosion
+    for k, bomb in wrld.bombs.items():
+        if node.bombTimer <= 2:
+            bombRange = wrld.expl_range
+            for x in range(-bombRange, bombRange):
+                if node.x == bomb.x + x and node.y == bomb.y:
+                    return None
+            for y in range(-bombRange, bombRange):
+                if node.x == bomb.x and node.y == bomb.y + y:
+                    return None
+    node.hval = math.inf
+
+    currSum = 0
+    # for monster in monsterlist:
+    for monster in node.monsters:
+        pathBetweenSelfAndMonster = astar.calculateAStarPath(node, monster, wrld, node.monsters, False)
+        myDistance = len(astar.calculateAStarPath(node, monster, wrld, node.monsters, False)[1])
+
+        # if there is a path between myself and the monster
+        if pathBetweenSelfAndMonster[0]:
+            distance = len(pathBetweenSelfAndMonster[1])
+            # distance = self.distanceBetweenNodes(node, monster, False)
+            if myDistance < node.distanceSmart and monster.type == "smart":
+                if distance < (node.distanceSmart - 1):
+                    # try very hard not to get into detection range
+                    currSum -= 5
+
+                elif distance < (node.distanceSmart - 2):
+                    currSum -= 10
+
+                currSum += distance
+
+            elif myDistance < node.distanceStupid + 1:
+                currSum += distance
+    node.hval = currSum
+    return node
+
