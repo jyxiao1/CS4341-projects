@@ -17,6 +17,7 @@ class TestCharacter(CharacterEntity):
         self.bombTimer = 0
         self.explosionTimer = 0
         self.placeBombAtEnd = False
+        self.bombPosition = None
         self.pathIterator = -1
         self.distanceFromExit = 0
         self.shouldPanic = shouldPanic
@@ -32,11 +33,15 @@ class TestCharacter(CharacterEntity):
         self.calculateCharacterPath(customEntities.Node(7, 18), wrld, True)
         self.pathIterator = 0
 
-        if self.explosionTimer > 0:
+        if self.bombTimer == 0 and self.explosionTimer > 0:
             self.explosionTimer -= 1
+            if self.explosionTimer == 0:
+                self.bombPosition = None
 
         if self.bombTimer > 0:
             self.bombTimer -= 1
+            if self.bombTimer <= 2:
+                self.runAway(wrld)
             if self.bombTimer == 0:
                 self.numberOfBombsPlaced += 1
                 self.explosionTimer = wrld.expl_duration + 1
@@ -83,11 +88,11 @@ class TestCharacter(CharacterEntity):
                             break
 
             # if a monster is pushing it near opposite wall
-            if self.shouldPanic and self.bombTimer == 0 and self.x == 0 or self.x == 1:
+            if self.shouldPanic and self.bombTimer == 0 and self.explosionTimer == 0 and self.x == 0:
                 self.placeBombAtEnd = True
                 self.panicCounter = 0
 
-            elif not selfIsCloserToExitThanMonster:
+            elif not selfIsCloserToExitThanMonster or self.bombTimer <= 2:
                 # pick the spot out of the 8 cardinal directions that is least near to a monster.
                 self.runAway(wrld)
 
@@ -95,6 +100,7 @@ class TestCharacter(CharacterEntity):
                 self.calculateCharacterPath(customEntities.Node(7, 18), wrld, False)
 
         if self.placeBombAtEnd:
+            self.bombPosition = customEntities.Node(self.x, self.y)
             self.place_bomb()
             self.bombTimer = wrld.bomb_time
             self.runAway(wrld)
@@ -151,16 +157,15 @@ class TestCharacter(CharacterEntity):
 
             # TODO account for other players bombs
             # do not include the nodes that would be in bomb's path of explosion
-            for k, bomb in wrld.bombs.items():
-                if self.bombTimer <= 2:
+            if self.bombTimer <= 2 and self.bombPosition is not None:
                     bombRange = wrld.expl_range
-                    for x in range(-bombRange, bombRange):
-                        if node.x == bomb.x + x and node.y == bomb.y:
+                    for x in range(-bombRange, bombRange + 1):
+                        if node.x == self.bombPosition.x + x and node.y == self.bombPosition.y:
                             shouldContinue = True
                             break
 
-                    for y in range(-bombRange, bombRange):
-                        if node.x == bomb.x and node.y == bomb.y + y:
+                    for y in range(-bombRange, bombRange + 1):
+                        if node.x == self.bombPosition.x and node.y == self.bombPosition.y + y:
                             shouldContinue = True
                             break
             if shouldContinue:
@@ -260,7 +265,7 @@ class TestCharacter(CharacterEntity):
                     minNode = node
 
             if astar.absoluteDistanceBetweenNodes(minNode, endNode) == astar.absoluteDistanceBetweenNodes(self, endNode) \
-                and self.bombTimer == 0 and len(wrld.explosions.items()) == 0:
+                and self.bombTimer == 0 and self.explosionTimer == 0 and len(wrld.explosions.items()) == 0:
                 self.placeBombAtEnd = True
 
             else:
