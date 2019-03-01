@@ -27,7 +27,7 @@ g.add_character(TestCharacter("me", # name
                               "C",  # avatar
                               0, 0,  # position
                               False,
-                              3, 6
+                              7, 7
 ))
 
 # Run!
