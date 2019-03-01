@@ -94,6 +94,7 @@ class TestCharacter(CharacterEntity):
         if self.placeBombAtEnd:
             self.bombPosition = customEntities.Node(self.x, self.y)
             self.place_bomb()
+            self.runAway(wrld)
             self.bombTimer = wrld.bomb_time
             self.placeBombAtEnd = False
 
