@@ -62,7 +62,6 @@ class TestCharacter(CharacterEntity):
             for monster in self.monsters:
                 monster.checkVelocity(wrld)
 
-
         if self.checkIfNearMonster(self, wrld):
             self.panicCounter += 1
             ispanicking = True
@@ -82,7 +81,9 @@ class TestCharacter(CharacterEntity):
                                 astar.calculateAStarPath(monster, customEntities.Node(7, 18), wrld, self.monsters, False)[1]):
                             selfIsCloserToExitThanMonster = False
                             break
-            if self.shouldPanic and self.bombTimer == 0 and self.x == 0:
+
+            # if a monster is pushing it near opposite wall
+            if self.shouldPanic and self.bombTimer == 0 and self.x == 0 or self.x == 1:
                 self.placeBombAtEnd = True
                 self.panicCounter = 0
 

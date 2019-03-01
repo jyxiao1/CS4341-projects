@@ -94,7 +94,6 @@ class TestCharacter(CharacterEntity):
             self.bombPosition = customEntities.Node(self.x, self.y)
             self.place_bomb()
             self.bombTimer = wrld.bomb_time
-            self.runAway(wrld)
             self.placeBombAtEnd = False
 
         self.pathIterator += 1
@@ -146,12 +145,12 @@ class TestCharacter(CharacterEntity):
             # do not include the nodes that would be in bomb's path of explosion
             if self.bombTimer <= 2 and self.bombPosition is not None:
                 bombRange = wrld.expl_range
-                for x in range(-bombRange - 1, bombRange + 1):
+                for x in range(-bombRange, bombRange + 1):
                     if node.x == self.bombPosition.x + x and node.y == self.bombPosition.y:
                         shouldContinue = True
                         break
 
-                for y in range(-bombRange - 1, bombRange + 1):
+                for y in range(-bombRange, bombRange + 1):
                     if node.x == self.bombPosition.x and node.y == self.bombPosition.y + y:
                         shouldContinue = True
                         break
@@ -163,7 +162,6 @@ class TestCharacter(CharacterEntity):
             for monster in self.monsters:
                 pathBetweenSelfAndMonster = astar.calculateAStarPath(node, monster, wrld, self.monsters, False)
                 myDistance = len(astar.calculateAStarPath(self, monster, wrld, self.monsters, False)[1])
-
 
                 # if there is a path between myself and the monster
                 if pathBetweenSelfAndMonster[0]:
