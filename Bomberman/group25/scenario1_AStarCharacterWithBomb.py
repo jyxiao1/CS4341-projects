@@ -101,6 +101,8 @@ class TestCharacter(CharacterEntity):
         self.distanceStupid = distanceStupid
         self.distanceSmart = distanceSmart
         self.panicCounter = 0
+        self.numberOfBombsPlaced = -1
+        self.bombPosition = None
 
     def do(self, wrld):
         if self.goToTheEnd:
@@ -113,17 +115,16 @@ class TestCharacter(CharacterEntity):
         self.calculateCharacterPath(Node(7, 18), wrld, True)
         self.pathIterator = 0
 
-        if self.shoudPanic and self.panicCounter > 3 and len(wrld.bombs.items()) == 0:
-            self.placeBombAtEnd = True
-            self.panicCounter = 0
-
-        if self.explosionTimer > 0:
+        if self.bombTimer == 0 and self.explosionTimer > 0:
             self.explosionTimer -= 1
+            if self.explosionTimer == 0:
+                self.bombPosition = None
 
         if self.bombTimer > 0:
             self.bombTimer -= 1
             if self.bombTimer == 0:
-                self.explosionTimer = wrld.expl_duration
+                self.numberOfBombsPlaced += 1
+                self.explosionTimer = wrld.expl_duration + 2
 
         for bomb in wrld.bombs.items():
             if self.explosionTimer < 4:
@@ -168,10 +169,14 @@ class TestCharacter(CharacterEntity):
                 # pick the spot out of the 8 cardinal directions that is least near to a monster.
                 self.runAway(6, wrld)
             else:
-                self.calculateCharacterPath(Node(7, 18), wrld, False)
-                self.goToTheEnd = True
-                self.pathIterator = 0
-                self.panicCounter = 0
+                self.calculateCharacterPath(customEntities.Node(7, 18), wrld, False)
+
+        if self.placeBombAtEnd:
+            self.bombPosition = customEntities.Node(self.x, self.y)
+            self.place_bomb()
+            self.bombTimer = wrld.bomb_time
+            self.runAway(wrld)
+            self.placeBombAtEnd = False
 
         if not ispanicking and self.panicCounter > 0:
             self.panicCounter -= 1
@@ -221,21 +226,18 @@ class TestCharacter(CharacterEntity):
             shouldContinue = False
 
             # TODO account for other players bombs
-            # only bomb is ours:
-            for k, bomb in wrld.bombs.items():
-                if self.bombTimer <= 2:
-                    # avoid the tiles in the x and y direction
-                    bombRange = wrld.expl_range
-                    for x in range(-bombRange, bombRange):
-                        if node.x == bomb.x + x and node.y == bomb.y:
-                            shouldContinue = True
-                            break
+            # do not include the nodes that would be in bomb's path of explosion
+            if self.bombTimer <= 2 and self.bombPosition is not None:
+                bombRange = wrld.expl_range
+                for x in range(-bombRange - 1, bombRange + 1):
+                    if node.x == self.bombPosition.x + x and node.y == self.bombPosition.y:
+                        shouldContinue = True
+                        break
 
-                    for y in range(-bombRange, bombRange):
-                        if node.x == bomb.x and node.y == bomb.y + y:
-                            shouldContinue = True
-                            break
-
+                for y in range(-bombRange - 1, bombRange + 1):
+                    if node.x == self.bombPosition.x and node.y == self.bombPosition.y + y:
+                        shouldContinue = True
+                        break
             if shouldContinue:
                 continue
 
@@ -270,12 +272,22 @@ class TestCharacter(CharacterEntity):
             self.path = [Node(self.x, self.y), Node(self.x, self.y)]
             return
 
-        firstNode = possibleNodes[0]
-        for node in possibleNodes:
-            # if node is in the path to the end
-            if len(self.path) > 1 and self.path[1].x == node.x and self.path[1].y == node.y:
-                path.append(node)
-                break
+        bestNode = None
+        highestSum = -math.inf
+
+        if shouldRun:
+            for node in possibleNodes:
+                if node.hval > highestSum:
+                    bestNode = node
+                    highestSum = node.hval
+
+        if bestNode is None:
+            # append possible nodes
+            for node in possibleNodes:
+                # if node is in the path to the end
+                if len(self.path) > 1 and self.path[1].x == node.x and self.path[1].y == node.y:
+                    bestNode = node
+                    break
 
         if len(path) <= 2:
             for node in possibleNodes:
