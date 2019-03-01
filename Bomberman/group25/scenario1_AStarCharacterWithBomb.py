@@ -22,12 +22,10 @@ class TestCharacter(CharacterEntity):
         self.shouldPanic = shouldPanic
         self.distanceStupid = distanceStupid
         self.distanceSmart = distanceSmart
-        self.panicCounter = 0
         self.numberOfBombsPlaced = -1
         self.bombPosition = None
 
     def do(self, wrld):
-        ispanicking = False
         # recalculate the AStar path and distance from exit every time
         self.distanceFromExit = astar.distanceBetweenNodes(customEntities.Node(self.x, self.y), customEntities.Node(7, 18), self.monsters, False)
         self.calculateCharacterPath(customEntities.Node(7, 18), wrld, True)
@@ -40,13 +38,11 @@ class TestCharacter(CharacterEntity):
 
         if self.bombTimer > 0:
             self.bombTimer -= 1
+            if self.bombTimer <= 2:
+                self.runAway(wrld)
             if self.bombTimer == 0:
                 self.numberOfBombsPlaced += 1
                 self.explosionTimer = wrld.expl_duration + 2
-
-        for bomb in wrld.bombs.items():
-            if self.bombTimer <= 2:
-                self.runAway(wrld)
 
         if len(self.path) == 1:
             self.runAway(wrld)
@@ -67,8 +63,6 @@ class TestCharacter(CharacterEntity):
                 monster.checkVelocity(wrld)
 
         if self.checkIfNearMonster(self, wrld):
-            self.panicCounter += 1
-            ispanicking = True
 
             # if my path ends at the exit
             selfIsCloserToExitThanMonster = True
@@ -88,9 +82,8 @@ class TestCharacter(CharacterEntity):
 
             if self.shouldPanic and len(wrld.bombs.items()) == 0:
                 self.placeBombAtEnd = True
-                self.panicCounter = 0
 
-            elif not selfIsCloserToExitThanMonster:
+            elif not selfIsCloserToExitThanMonster or self.bombTimer <= 2:
                 # pick the spot out of the 8 cardinal directions that is least near to a monster.
                 self.runAway(wrld)
 
@@ -101,11 +94,8 @@ class TestCharacter(CharacterEntity):
             self.bombPosition = customEntities.Node(self.x, self.y)
             self.place_bomb()
             self.bombTimer = wrld.bomb_time
-            self.runAway(wrld)
             self.placeBombAtEnd = False
 
-        if not ispanicking and self.panicCounter > 0:
-            self.panicCounter -= 1
         self.pathIterator += 1
         self.move(self.path[self.pathIterator].x - self.x, self.path[self.pathIterator].y - self.y)
         return
@@ -126,8 +116,6 @@ class TestCharacter(CharacterEntity):
 
         return False
 
-    # TODO calculate distance function
-    # def distanceBetweenPoints():
 
     # TODO Implement alpha beta search to try to run away faster
     def runAway(self, wrld):
@@ -157,12 +145,12 @@ class TestCharacter(CharacterEntity):
             # do not include the nodes that would be in bomb's path of explosion
             if self.bombTimer <= 2 and self.bombPosition is not None:
                 bombRange = wrld.expl_range
-                for x in range(-bombRange - 1, bombRange + 1):
+                for x in range(-bombRange, bombRange + 1):
                     if node.x == self.bombPosition.x + x and node.y == self.bombPosition.y:
                         shouldContinue = True
                         break
 
-                for y in range(-bombRange - 1, bombRange + 1):
+                for y in range(-bombRange, bombRange + 1):
                     if node.x == self.bombPosition.x and node.y == self.bombPosition.y + y:
                         shouldContinue = True
                         break
@@ -174,7 +162,6 @@ class TestCharacter(CharacterEntity):
             for monster in self.monsters:
                 pathBetweenSelfAndMonster = astar.calculateAStarPath(node, monster, wrld, self.monsters, False)
                 myDistance = len(astar.calculateAStarPath(self, monster, wrld, self.monsters, False)[1])
-
 
                 # if there is a path between myself and the monster
                 if pathBetweenSelfAndMonster[0]:
