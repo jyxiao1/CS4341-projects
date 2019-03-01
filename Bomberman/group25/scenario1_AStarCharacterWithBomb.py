@@ -5,7 +5,8 @@ sys.path.insert(0, '../bomberman')
 # Import necessary stuff
 from entity import CharacterEntity
 import math
-from Bomberman import astar, customEntities
+import customEntities
+import astar
 
 
 class TestCharacter(CharacterEntity):
@@ -27,7 +28,7 @@ class TestCharacter(CharacterEntity):
 
     def do(self, wrld):
         # recalculate the AStar path and distance from exit every time
-        self.distanceFromExit = astar.distanceBetweenNodes(customEntities.Node(self.x, self.y), customEntities.Node(7, 18), self.monsters, False)
+        self.distanceFromExit = astar.chebyshevDistance(customEntities.Node(self.x, self.y), customEntities.Node(7, 18), self.monsters, False)
         self.calculateCharacterPath(customEntities.Node(7, 18), wrld, True)
         self.pathIterator = 0
 
@@ -83,7 +84,7 @@ class TestCharacter(CharacterEntity):
             if self.shouldPanic and len(wrld.bombs.items()) == 0:
                 self.placeBombAtEnd = True
 
-            elif not selfIsCloserToExitThanMonster or self.bombTimer <= 2:
+            elif not selfIsCloserToExitThanMonster or (self.bombTimer <= 2 and self.bombPosition is not None):
                 # pick the spot out of the 8 cardinal directions that is least near to a monster.
                 self.runAway(wrld)
 
@@ -166,7 +167,7 @@ class TestCharacter(CharacterEntity):
                 # if there is a path between myself and the monster
                 if pathBetweenSelfAndMonster[0]:
                     distance = len(pathBetweenSelfAndMonster[1])
-                    # distance = self.distanceBetweenNodes(node, monster, False)
+                    # distance = self.chebyshevDistance(node, monster, False)
                     if myDistance < self.distanceSmart and monster.type == "smart":
                         if distance < (self.distanceSmart - 1):
                             # try very hard not to get into detection range
@@ -177,7 +178,7 @@ class TestCharacter(CharacterEntity):
                             shouldRun = True
 
                         currSum += distance
-                        node.hval = astar.absoluteDistanceBetweenNodes(node, monster)
+                        node.hval = astar.manhattanDistance(node, monster)
 
                     elif myDistance < self.distanceStupid + 1:
                         currSum += distance
@@ -242,11 +243,11 @@ class TestCharacter(CharacterEntity):
             minNode = startNode
             minNode.hval = math.inf
             for node in path[1]:
-                node.hval = astar.absoluteDistanceBetweenNodes(node, endNode)
+                node.hval = astar.manhattanDistance(node, endNode)
                 if node.hval < minNode.hval:
                     minNode = node
 
-            if astar.absoluteDistanceBetweenNodes(minNode, endNode) == astar.absoluteDistanceBetweenNodes(self, endNode) \
+            if astar.manhattanDistance(minNode, endNode) == astar.manhattanDistance(self, endNode) \
                 and self.bombTimer == 0 and len(wrld.explosions.items()) == 0:
                 self.placeBombAtEnd = True
 

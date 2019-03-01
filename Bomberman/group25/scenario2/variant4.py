@@ -16,7 +16,7 @@ from scenario2_AStarCharacterWithBomb import TestCharacter
 # from scen2var4character import Scen2Var4Character
 
 # Create the game
-random.seed(1023) # TODO Change this if you want different random choices
+random.seed(20) # TODO Change this if you want different random choices
 g = Game.fromfile('map.txt')
 g.add_monster(SelfPreservingMonster("aggressive", # name
                                     "A",          # avatar
