@@ -5,8 +5,8 @@ sys.path.insert(0, '../bomberman')
 # Import necessary stuff
 from entity import CharacterEntity
 import math
-import customEntities
-import astar
+from Bomberman import astar, customEntities
+
 
 class TestCharacter(CharacterEntity):
     def __init__(self, name, avatar, x, y, shouldPanic, distanceStupid, distanceSmart):
@@ -28,7 +28,7 @@ class TestCharacter(CharacterEntity):
     def do(self, wrld):
         ispanicking = False
         # recalculate the AStar path and distance from exit every time
-        self.distanceFromExit = astar.distanceBetweenNodes(customEntities.Node(self.x, self.y), customEntities.Node(7,18), self.monsters, False)
+        self.distanceFromExit = astar.distanceBetweenNodes(customEntities.Node(self.x, self.y), customEntities.Node(7, 18), self.monsters, False)
         self.calculateCharacterPath(customEntities.Node(7, 18), wrld, True)
         self.pathIterator = 0
 
@@ -78,7 +78,8 @@ class TestCharacter(CharacterEntity):
             else:
                 for key, monsterlist in wrld.monsters.items():
                     for monster in monsterlist:
-                        if len(myPathToExit[1]) >= len(astar.calculateAStarPath(monster, customEntities.Node(7, 18), wrld, self.monsters, False)[1]):
+                        if len(myPathToExit[1]) >= len(
+                                astar.calculateAStarPath(monster, customEntities.Node(7, 18), wrld, self.monsters, False)[1]):
                             selfIsCloserToExitThanMonster = False
                             break
             if self.shouldPanic and self.bombTimer == 0 and self.x == 0:
@@ -199,7 +200,8 @@ class TestCharacter(CharacterEntity):
                 highestSum = currSum
                 possibleNodes = [node]
 
-        pathToStart = (astar.calculateAStarPath(self, customEntities.Node(0, 4*self.numberOfBombsPlaced), wrld, self.monsters, True))[1]
+        pathToStart = (
+            astar.calculateAStarPath(self, customEntities.Node(0, 4 * self.numberOfBombsPlaced), wrld, self.monsters, True))[1]
         self.calculateCharacterPath(customEntities.Node(7, 18), wrld, True)
         if not possibleNodes:
             # accept death.

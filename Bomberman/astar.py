@@ -1,4 +1,5 @@
-import customEntities
+from Bomberman import customEntities
+
 
 # includes the a star code as well as some useful utility functions
 

@@ -1,5 +1,4 @@
-import customEntities
-import astar
+from Bomberman import astar
 import math
 
 # first version of nodevalue
