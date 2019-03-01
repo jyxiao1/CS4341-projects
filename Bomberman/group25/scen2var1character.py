@@ -115,10 +115,6 @@ class Scen2Var1Character(CharacterEntity):
         v = (-99999, (0,0))
         #Iterate through possible new worlds
         for (newwrld, newevents, move) in self.get_nextworlds(wrld):
-            # Adapted from example code, but I don't know if it will really move.
-            #self.move(action[0],action[1])
-            # Get new wrld
-            # (newwrld, newevents) = wrld.next()
 
             # Associated move calculated as the difference between the clone character's position and
             # the current character's position
@@ -168,30 +164,12 @@ class Scen2Var1Character(CharacterEntity):
         # Default move is no move at all
         v = (99999, (0,0))
         for (newwrld, newevents, move) in self.get_nextworlds(wrld):
-            # Adapted from example code, but I don't know if it will really move.
-            #self.move(action[0], action[1])
-            # Get new wrld
-            # (newwrld, newevents) = wrld.next()
 
             # Associated move calculated as the difference between the clone character's position and
             # the current character's position
             # Or the difference between the exit's position and the current character's position if the character has
             # found the exit in this new board
             # TODO: Account for character death
-            """
-            charoffboard = False
-            for e in newevents:
-                if e.tpe == e.CHARACTER_FOUND_EXIT:
-                    charoffboard = True
-            if charoffboard:
-                move = (self.exit[0] - self.x, self.exit[1] - self.y)
-            else:
-                move = (newwrld.me(self).x - self.x, newwrld.me(self).y - self.y)
-            # If there's a bomb at the character's location on this board, the move is BOMB, meaning placing a bomb
-            # rather than moving
-            if newwrld.bomb_at(newwrld.me(self).x, newwrld.me(self).y):
-                move = self.BOMB
-            """
             newValue = self.max_value(newwrld, newevents, alpha, beta, depth - 1)[0]
             if v[0] > newValue:
                 v = (newValue,move)
@@ -215,7 +193,6 @@ class Scen2Var1Character(CharacterEntity):
         ybombdistance = 99999
         dangercost = 0
         if not self.bomb == (-1,-1):
-            #bombdistance = max(abs(self.bomb[0]-wrld.me(self).x),abs(self.bomb[1]-wrld.me(self).y)
             xbombdistance = abs(self.bomb[0]-wrld.me(self).x)
             ybombdistance = abs(self.bomb[1]-wrld.me(self).y)
         #If within range of a bomb, getting away from it should be top priority.
@@ -224,52 +201,4 @@ class Scen2Var1Character(CharacterEntity):
             fraction = wrld.expl_range + 1 - bombdistance
             dangercost = -9999*fraction
         # Distance made negative for return value so shorter distances are of higher value
-        #print(distance*-1+dangercost)
         return distance * -1 + dangercost
-        """
-        if position in self.visited:
-            # Move has a lower value if there character has already been there
-            return distance * -2
-        else:
-            return distance * -1
-        """
-        """
-        xdiff = self.exit[0]-wrld.me(self).x
-        ydiff = self.exit[1]-wrld.me(self).y
-        if xdiff < 0:
-            dx = -1
-            xdiff = xdiff*-1
-        else:
-            dx = 1
-
-        if ydiff < 0:
-            dy = -1
-            ydiff = ydiff * -1
-        else:
-            dy = 1
-
-        if(xdiff >= ydiff):
-            greaterdiff = xdiff
-            lesserdiff = ydiff
-        else:
-            greaterdiff = ydiff
-            lesserdiff = xdiff
-
-        wallcount = 0
-
-        for i in range(0,greaterdiff):
-            if greaterdiff == xdiff:
-                x = i
-                y = lesserdiff/greaterdiff
-            else:
-                y = i
-                x = lesserdiff/greaterdiff
-            # Increments dimension with greater difference by 1, then rounds other dimension incremented by appropriate piece of the slope
-            # Makes sure no rounded values are out of bounds
-            if round(self.x+(x*dx)) >= 0 and round(self.x+(x*dx)) < wrld.width() and round(self.y+(y*dy)) >= 0 and round(self.y+(y*dy)) < wrld.height() and wrld.wall_at(round(self.x+(x*dx)),round(self.y+(y*dy))):
-                wallcount = wallcount + 1
-
-        # A cell is worth less points if there are walls directly between the character and the exit
-        # I do not know if my math is right.
-        return distance * -1 * wallcount
-        """
