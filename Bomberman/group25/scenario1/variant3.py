@@ -13,7 +13,7 @@ sys.path.insert(1, '../group25')
 from scenario1_AStarCharacterWithBomb import TestCharacter
 
 # Create the game
-random.seed(5654) # TODO Change this if you want different random choices
+random.seed(20) # TODO Change this if you want different random choices
 g = Game.fromfile('map.txt')
 g.add_monster(SelfPreservingMonster("selfpreserving", # name
                                     "S",              # avatar
@@ -26,7 +26,7 @@ g.add_character(TestCharacter("me", # name
                               "C",  # avatar
                               0, 0,  # position
                               True,
-                              4, 5
+                              6, 5
 ))
 
 # Run!

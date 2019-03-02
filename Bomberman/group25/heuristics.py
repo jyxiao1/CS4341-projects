@@ -1,4 +1,4 @@
-from Bomberman import astar
+import astar
 import math
 
 # first version of nodevalue
@@ -112,7 +112,7 @@ def nodeValueAStar(node, wrld):
         # if there is a path between myself and the monster
         if pathBetweenSelfAndMonster[0]:
             distance = len(pathBetweenSelfAndMonster[1])
-            # distance = self.distanceBetweenNodes(node, monster, False)
+            # distance = self.chebyshevDistance(node, monster, False)
             if myDistance < node.distanceSmart and monster.type == "smart":
                 if distance < (node.distanceSmart - 1):
                     # try very hard not to get into detection range

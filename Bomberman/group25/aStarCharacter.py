@@ -86,7 +86,7 @@ class TestCharacter(CharacterEntity):
 
                 if not isClosed:
                     neighbor.gval = minNode.gval + 1
-                    neighbor.hval = self.distanceBetweenNodes(neighbor, endNode)
+                    neighbor.hval = self.chebyshevDistance(neighbor, endNode)
                     neighbor.fval = neighbor.gval + neighbor.hval
 
                     if isOpen and neighbor.fval < sameNode.fval:
@@ -96,7 +96,7 @@ class TestCharacter(CharacterEntity):
                         openNodes.append(neighbor)
 
             # for node in self.getNeighbors(currNode, wrld):
-            #     currCost = self.distanceBetweenNodes(node, startNode) + self.distanceBetweenNodes(node, endNode)
+            #     currCost = self.chebyshevDistance(node, startNode) + self.chebyshevDistance(node, endNode)
             #     #if the cost isn't here or
             #     if currCost not in costs or currCost < costs[node]:
             #         costs[node] = currCost
@@ -122,7 +122,7 @@ class TestCharacter(CharacterEntity):
         return listOfNeighbors
 
     # absolute distance between two nodes
-    def distanceBetweenNodes(self, currNode, endNode):
+    def chebyshevDistance(self, currNode, endNode):
         xDistance = abs(endNode.x - currNode.x)
         yDistance = abs(endNode.y - currNode.y)
 

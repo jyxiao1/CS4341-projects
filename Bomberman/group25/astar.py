@@ -1,4 +1,4 @@
-from Bomberman import customEntities
+import customEntities
 
 
 # includes the a star code as well as some useful utility functions
@@ -53,7 +53,7 @@ def calculateAStarPath(startNode, endNode, wrld, listOfMonsters, shouldPathAroun
 
             if not isClosed:
                 neighbor.gval = minNode.gval + 1
-                neighbor.hval = distanceBetweenNodes(neighbor, endNode, listOfMonsters, shouldPathAroundMonsters)
+                neighbor.hval = chebyshevDistance(neighbor, endNode, listOfMonsters, shouldPathAroundMonsters)
                 neighbor.fval = neighbor.gval + neighbor.hval
 
                 if isOpen and neighbor.fval < sameNode.fval:
@@ -87,7 +87,7 @@ def getNeighbors(node, endNode, wrld):
 
 
 # absolute distance between nodes
-def absoluteDistanceBetweenNodes(currNode, endNode):
+def manhattanDistance(currNode, endNode):
     xDistance = abs(endNode.x - currNode.x)
     yDistance = abs(endNode.y - currNode.y)
 
@@ -95,7 +95,7 @@ def absoluteDistanceBetweenNodes(currNode, endNode):
 
 
 # distance between two nodes
-def distanceBetweenNodes(currNode, endNode, listOfMonsters, shouldPathAroundMonsters):
+def chebyshevDistance(currNode, endNode, listOfMonsters, shouldPathAroundMonsters):
     xDistance = abs(endNode.x - currNode.x)
     yDistance = abs(endNode.y - currNode.y)
 
